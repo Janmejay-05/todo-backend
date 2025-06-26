@@ -101,4 +101,82 @@ userRoutes.post(
   }
 );
 
+//email check
+userRoutes.post("/email-check", [body("email").isEmail()], async (req, res) => {
+  const result = validationResult(req);
+  if (!result.isEmpty()) {
+    result.errors = result.errors.map((item) => {
+      if (item.path == "email") {
+        item.msg = "invalid email";
+        return item;
+      }
+      return item;
+    });
+
+    return res.status(400).json({ result });
+  }
+
+  const { email } = req.body;
+  console.log("email", email);
+  try {
+    const findEmail = await userModel.findOne({ email });
+    console.log(findEmail);
+    if (!findEmail) {
+      return res.status(400).json({ message: "no email found" });
+    }
+
+    const otp = Math.floor(Math.random() * 9000) + 1000;
+    res.json({ message: "successful", otp, email: findEmail.email });
+  } catch (err) {
+    res.status(400).json({ message: "error" });
+  }
+});
+
+//update password
+
+userRoutes.post(
+  "/password-update",
+  [body("email").isEmail(), body("password").isLength({ min: 5 })],
+  async (req, res) => {
+    const result = validationResult(req);
+    if (!result.isEmpty()) {
+      result.errors = result.errors.map((item) => {
+        if (item.path == "email") {
+          item.msg = "invalid email";
+          return item;
+        }
+
+        if (item.path == "password") {
+          item.msg = "invalid password";
+          return item;
+        }
+
+        return item;
+      });
+
+      return res.status(400).json({ result });
+    }
+
+    const { email, password } = req.body;
+
+    console.log("email", email, "password", password);
+    try {
+      const newpassword = await bcrypt.hash(password, 10);
+
+      const findEmail = await userModel.findOneAndUpdate(
+        { email },
+        { password: newpassword }
+      );
+      console.log(findEmail);
+      if (!findEmail) {
+        return res.status(400).json({ message: "no email found" });
+      }
+
+      res.json({ message: "successful" });
+    } catch (err) {
+      res.status(400).json({ message: "error" });
+    }
+  }
+);
+
 module.exports = userRoutes;
