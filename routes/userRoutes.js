@@ -179,4 +179,61 @@ userRoutes.post(
   }
 );
 
+userRoutes.post(
+  "/change-password",
+  [
+    body("oldPassword").isLength({ min: 5 }),
+    body("newPassword").isLength({ min: 5 }),
+    body("confirmPassword").isLength({ min: 5 }),
+  ],
+  async (req, res) => {
+    const result = validationResult(req);
+    if (!result.isEmpty()) {
+      result.errors = result.errors.map((item) => {
+        if (item.path == "oldPassword") {
+          item.msg = "invalid oldPassword";
+          return item;
+        }
+
+        if (item.path == "newPassword") {
+          item.msg = "invalid newpassword";
+          return item;
+        }
+
+        if (item.path == "confirmPassword") {
+          item.msg = "invalid confirmPassword";
+          return item;
+        }
+
+        return item;
+      });
+
+      return res.status(400).json({ result });
+    }
+    console.log(req.body);
+    try {
+      const { oldPassword, newPassword, confirmPassword, email } = req.body;
+
+      const Data = await userModel.findOne({ email });
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ invalid: "both password dosen't match" });
+      }
+
+      //checking old password
+      if (await bcrypt.compare(oldPassword, Data.password)) {
+        const encPassword = await bcrypt.hash(newPassword, 10);
+
+        await userModel.findOneAndUpdate({ email }, { password: encPassword });
+
+        return res.status(200).json({ message: "successful" });
+      } else {
+        res.status(400).json({ invalid: "wrong old password" });
+      }
+    } catch (err) {
+      res.status(400).json({ invalid: " catch error" });
+    }
+  }
+);
+
 module.exports = userRoutes;

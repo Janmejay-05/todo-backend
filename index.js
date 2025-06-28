@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/user", userRoutes);
 
-app.get("/userdata", Auth, async (req, res) => {
+app.get("/userdata", async (req, res) => {
   try {
     const data = JSON.parse(req.headers.user);
 
@@ -28,6 +28,8 @@ app.get("/userdata", Auth, async (req, res) => {
     res.status(200).json({ message: "userpage", userData });
   } catch (err) {
     res.status(400).json({ message: err });
+
+    res.status(400).json({ err });
   }
 });
 
